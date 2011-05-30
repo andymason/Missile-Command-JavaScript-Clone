@@ -1,5 +1,9 @@
 /**
  * Missile Commnad HTML5 JavaScript clone
+ * 
+ * @author  Andrew Mason
+ * @contact andrew@coderonfire.com
+ * 
  */
 
 var MC = MC || (function() {
@@ -18,7 +22,8 @@ var MC = MC || (function() {
             _gameInterval,
             _entities = {
                 'missiles': [],
-                'targets': []
+                'targets': [],
+                'rockets': []
             },
             _levels = [];
 
@@ -37,20 +42,27 @@ var MC = MC || (function() {
             _missiles_destroyed = 0;
         };
         
-        
         /**
          * Pause game
          */
         function _pause() {
             clearInterval(_gameInterval);
         };
-         
+        
+        // Setup click/touch events
+        _canvas.addEventListener('click', launchRocket, false);
+        
+        function launchRocket(event) {
+            var xPos = event.clientX - this.offsetLeft,
+                yPos = event.clientY - this.offsetTop;
+            
+            _entities.rockets.push(new Rocket(xPos, yPos));
+        };
 
         /**
          * Game loop
          */
         function _gameLoop() {
-        
             // Wave end?
             if (_missiles_destroyed === Wave.getWave(_level).MissilesToDetroy) {
                 _level += 1;
@@ -80,7 +92,20 @@ var MC = MC || (function() {
             // Draw entities to the canvas
             _drawEntities(_entities.targets);
             _drawEntities(_entities.missiles);
+            _drawEntities(_entities.rockets);
+            
+            // Draw debug information
+            debugInfo();
         };
+        
+        function debugInfo() {
+            _ctx.fillStyle = 'rgb(255, 255, 255)';
+            _ctx.fillText(
+                'Missile launched = ' + _missiles_created + '/' + Wave.getWave(_level).MissilesToDetroy,
+                10, 20
+            );
+            _ctx.fillText('Level = ' + _level, 10, 30);
+        }
 
         /**
          * Draw each entity to the canvas
@@ -90,6 +115,11 @@ var MC = MC || (function() {
         function _drawEntities(entities) {
             for (var i = 0; i < entities.length; i++) {
                 entities[i].draw(_ctx);
+                
+                // @TODO Move rockets out somewhere better
+                if (entities[i].currentRadius <= 1 && !entities[i].expanding) {
+                    entities.splice(i, 1);
+                }
             }
         };
 
@@ -104,22 +134,42 @@ var MC = MC || (function() {
                 entities[i].move();
                 
                 // Check for collision
-                if (entities[i].hasHit()) {
+                // @TODO: Split the two hits into different sections
+                if (hasHitRocketExplosion(entities[i]) || entities[i].hasHit()) {
                     // Remove the missile
                     entities.splice(i, 1);
                     count -= 1;
-                    
                     // Note the destroyed missile
                     _missiles_destroyed += 1;
                     // Reset missile timer to trigger creation of new missile
                     _new_missile = 0;
-                    
                 }
+                
                 // Pause the game if there's no missiles
                 if (_entities.missiles.length <= 0) {
                    // _pause();
                 }
             }
+        };
+        
+        /**
+         * Check if a missile hit a rocket explosion.
+         * 
+         * @param {object} missile.
+         * @return {bool} Boolean verdict.
+         */
+        function hasHitRocketExplosion(missile) {
+            for (var i = 0; i < _entities.rockets.length; i++) {
+                var x = _entities.rockets[i].pos.x - missile.pos.x,
+                    y = _entities.rockets[i].pos.y - missile.pos.y;
+                    
+                var dist = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+                
+                if (dist < _entities.rockets[i].currentRadius) {
+                    return true;
+                }
+            }
+            return false;
         };
 
         /**
@@ -159,27 +209,6 @@ var MC = MC || (function() {
             return target;
         };
         
-        /**
-         * Check if a missile hit a target.
-         * 
-         * @param {object} missilePos Missile's position.
-         * @return {bool} Boolean verdict.
-         */
-        function _hasHitTarget(missilePos) {
-            for (var i = 0; i < _entities.targets.length; i++) {
-                var target = _entities.targets[i];
-
-                if (missilePos.x >= target.pos.x
-                    && missilePos.y >= target.pos.y
-                    && missilePos.y <= target.pos.y + target.width
-                ) {
-                    return true;
-                }
-            }
-            
-            return false;
-        };
-
         /*
          * @return {float} Width of the canvas
          */
@@ -192,10 +221,10 @@ var MC = MC || (function() {
             'loadLevel': loadLevel,
             'getWidth': getWidth,
             'getRandomTarget': getRandomTarget,
+            'launchRocket': launchRocket,
             'run': run
         };
     }());
-
     
     
     var Wave = (function() {
@@ -230,11 +259,6 @@ var MC = MC || (function() {
             'getWave': getWave
         };
     }());
-    
-    
-    
-
-
 
 
     /**
@@ -256,7 +280,6 @@ var MC = MC || (function() {
             this.height
         );
     };
-
 
     /**
      * Turret launcher class
@@ -362,11 +385,39 @@ var MC = MC || (function() {
             {'colour': 'rgb(0, 30, 70)', 'position': 0.7},
             {'colour': 'rgb(0, 60, 120)', 'position': 1}
         ],
-        'rocketCount': 30,
+        'rocketCount': 5,
         'attackRate': 1,
         'timer': 30
     };
-
+    
+    var Rocket = function Rocket(xPos, yPos) {
+        this.fullRadius = 35;
+        this.currentRadius = 0;
+        this.expanding = true;
+        this.explosionSpeed = 0.8;
+        this.pos = {
+            'x': xPos,
+            'y': yPos
+        };
+    };
+    
+    Rocket.prototype.draw = function(ctx) {
+        if (this.expanding) {
+            this.currentRadius += this.explosionSpeed;
+            
+            if (this.currentRadius >= this.fullRadius) {
+                this.expanding = false;
+            }
+        } else {
+            this.currentRadius -= this.explosionSpeed;
+        }
+        
+        ctx.fillStyle = 'rgb(255, 255, 255)';
+        ctx.beginPath();
+        ctx.arc(this.pos.x, this.pos.y, this.currentRadius, 0, Math.PI * 2, true);
+        ctx.closePath();
+        ctx.fill();
+    };
 
     function init() {
         engine.loadLevel(levels[0]);
