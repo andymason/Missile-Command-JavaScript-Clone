@@ -74,7 +74,7 @@ var MC = MC || (function() {
             _ctx.fillStyle = _gradient;
             _ctx.fillRect(0, 0, _width, _height);
 
-            // Move entities
+            // Move missiles
             _moveEntities(_entities.missiles);
 
             // Draw entities to the canvas
@@ -104,7 +104,7 @@ var MC = MC || (function() {
                 entities[i].move();
                 
                 // Check for collision
-                if (_hasHitTarget(entities[i].pos)) {
+                if (entities[i].hasHit()) {
                     // Remove the missile
                     entities.splice(i, 1);
                     count -= 1;
@@ -155,11 +155,8 @@ var MC = MC || (function() {
             var targetCount = _entities.targets.length;
             var rndIndex = Math.floor(targetCount * Math.random());
             var target = _entities.targets[rndIndex];
-
-            return {
-                'x': target.pos.x + target.width / 2,
-                'y': target.pos.y
-            };
+            
+            return target;
         };
         
         /**
@@ -287,26 +284,6 @@ var MC = MC || (function() {
     };
     Home.prototype = new Entity;
 
-
-    /**
-     * Rocket class
-     *
-     * @param {object} origin Where the rocket starts from.
-     * @param {object} target Where the rocket is going to.
-     */
-    var Rocket = function Bullet(origin, target) {
-        this.pos = origin;
-        this.dest = target;
-    }
-    Rocket.prototype.draw = function() {
-
-    };
-    Rocket.prototype.move = function() {
-
-    };
-
-
-
     /**
      * Missile class
      *
@@ -314,20 +291,18 @@ var MC = MC || (function() {
      * @param {object} target Target destination position.
      */
     var Missile = function Missle(origin, target, speed) {
+        this.pos = {};
         this.origin = origin || {
             'x': engine.getWidth() * Math.random(),
             'y': 0
         };
-
+        
         this.target = target || engine.getRandomTarget();
-        this.pos = {};
-
+        
         // Calculate angle
-        var x = this.target.x - this.origin.x;
-        var y = this.target.y - this.origin.y;
+        var x = (this.target.pos.x + this.target.width / 2) - this.origin.x;
+        var y = this.target.pos.y - this.origin.y;
         this.angle = Math.atan(x / y);
-
-        //console.log("x %f, y %f, angle %f", x, y, this.angle);
 
         this.colour = 'rgb(0, 255, 0)';
         this.speed = speed;
@@ -350,6 +325,17 @@ var MC = MC || (function() {
         this.distance += this.speed;
         this.pos.x = Math.sin(this.angle) * this.distance + this.origin.x;
         this.pos.y = Math.cos(this.angle) * this.distance + this.origin.y;
+    };
+    
+    Missile.prototype.hasHit = function() {
+        if (this.pos.x >= this.target.pos.x
+            && this.pos.y >= this.target.pos.y
+            && this.pos.y <= this.target.pos.y + this.target.width
+        ) {
+            return true;
+        } else {
+            return false;
+        }
     };
 
 
