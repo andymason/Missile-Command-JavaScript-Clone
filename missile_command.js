@@ -23,6 +23,7 @@ var MC = MC || (function() {
             _entities = {
                 'missiles': [],
                 'targets': [],
+                'turrets': [],
                 'rockets': []
             },
             _levels = [];
@@ -86,8 +87,12 @@ var MC = MC || (function() {
             _ctx.fillStyle = _gradient;
             _ctx.fillRect(0, 0, _width, _height);
 
-            // Move missiles
+            // Move missiles & rockets
             _moveEntities(_entities.missiles);
+            var count = _entities.rockets.length;
+            for (var i = 0; i < count; i++) {
+                _entities.rockets[i].move();
+            }
 
             // Draw entities to the canvas
             _drawEntities(_entities.targets);
@@ -180,6 +185,7 @@ var MC = MC || (function() {
         function loadLevel(level) {
             // Add game entities
             for (var i = 0; i < level.turrets.length; i++) {
+                _entities.turrets.push(level.turrets[i]);
                 _entities.targets.push(new Turret(level.turrets[i]));
             }
             for (var i = 0; i < level.homes.length; i++) {
@@ -202,9 +208,28 @@ var MC = MC || (function() {
          * @return {object} Target's location.
          */
         function getRandomTarget() {
-            var targetCount = _entities.targets.length;
+            return _getRandomEntity(_entities.targets);
+        };
+        
+        /**
+         * Get random Turret
+         *
+         * @return {object} Target's location.
+         */
+        function getRandomTurret() {
+            return _getRandomEntity(_entities.turrets);
+        };
+        
+        /**
+         * Get random target location
+         *
+         * @param  {array}  Array of entities
+         * @return {object} Target's location.
+         */
+        function _getRandomEntity(entities) {
+            var targetCount = entities.length;
             var rndIndex = Math.floor(targetCount * Math.random());
-            var target = _entities.targets[rndIndex];
+            var target = entities[rndIndex];
             
             return target;
         };
@@ -221,6 +246,7 @@ var MC = MC || (function() {
             'loadLevel': loadLevel,
             'getWidth': getWidth,
             'getRandomTarget': getRandomTarget,
+            'getRandomTurret': getRandomTurret,
             'launchRocket': launchRocket,
             'run': run
         };
@@ -360,6 +386,77 @@ var MC = MC || (function() {
             return false;
         }
     };
+    
+    var Rocket = function Rocket(xPos, yPos) {
+        this.fullRadius = 30;
+        this.currentRadius = 0;
+        this.expanding = true;
+        this.explosionSpeed = 0.8;
+        this.exploded = false;
+        this.speed = 4;
+        this.distance = 0;
+        
+        this.target = {
+            'x': xPos,
+            'y': yPos
+        };
+        
+        // @TODO: Weird turret reference issue causing red turrets to move
+        var turret = engine.getRandomTurret();
+        this.origin = {x: turret.x, y: turret.y};
+        this.pos = {x: turret.x, y: turret.y};
+        
+        // Calculate angle
+        var x = this.target.x - this.origin.x;
+        var y = this.target.y - this.origin.y;
+        this.angle = Math.atan(x / y);
+        
+    };
+    
+    Rocket.prototype.move = function() {
+        if (this.exploded) {
+            return;
+        }
+        
+        this.distance -= this.speed;
+        
+        this.pos.x = Math.sin(this.angle) * this.distance + this.origin.x;
+        this.pos.y = Math.cos(this.angle) * this.distance + this.origin.y;
+        
+        if (this.pos.y < this.target.y) {
+            this.exploded = true;
+        }
+    };
+    
+    Rocket.prototype.draw = function(ctx) {
+        if (this.exploded) {
+            if (this.expanding) {
+                this.currentRadius += this.explosionSpeed;
+                
+                if (this.currentRadius >= this.fullRadius) {
+                    this.expanding = false;
+                }
+            } else {
+                this.currentRadius -= this.explosionSpeed;
+            }
+            
+            ctx.fillStyle = 'rgb(255, 255, 255)';
+            ctx.beginPath();
+            ctx.arc(this.pos.x, this.pos.y, this.currentRadius, 0, Math.PI * 2, true);
+            ctx.closePath();
+            ctx.fill();
+        } else {
+            ctx.strokeStyle = 'rgb(255, 255, 255)';
+            ctx.beginPath();
+            ctx.moveTo(this.origin.x, this.origin.y);
+            ctx.lineTo(
+                this.pos.x,
+                this.pos.y
+            );
+            ctx.closePath();
+            ctx.stroke();
+        }        
+    };
 
 
     /**
@@ -388,35 +485,6 @@ var MC = MC || (function() {
         'rocketCount': 5,
         'attackRate': 1,
         'timer': 30
-    };
-    
-    var Rocket = function Rocket(xPos, yPos) {
-        this.fullRadius = 35;
-        this.currentRadius = 0;
-        this.expanding = true;
-        this.explosionSpeed = 0.8;
-        this.pos = {
-            'x': xPos,
-            'y': yPos
-        };
-    };
-    
-    Rocket.prototype.draw = function(ctx) {
-        if (this.expanding) {
-            this.currentRadius += this.explosionSpeed;
-            
-            if (this.currentRadius >= this.fullRadius) {
-                this.expanding = false;
-            }
-        } else {
-            this.currentRadius -= this.explosionSpeed;
-        }
-        
-        ctx.fillStyle = 'rgb(255, 255, 255)';
-        ctx.beginPath();
-        ctx.arc(this.pos.x, this.pos.y, this.currentRadius, 0, Math.PI * 2, true);
-        ctx.closePath();
-        ctx.fill();
     };
 
     function init() {
