@@ -23,8 +23,8 @@ var MC = MC || (function() {
             _entities = {
                 'missiles': [],
                 'targets': [],
-                'turrets': [],
-                'rockets': []
+                'rockets': [],
+                'turret': null
             },
             _levels = [];
 
@@ -54,10 +54,18 @@ var MC = MC || (function() {
         _canvas.addEventListener('click', launchRocket, false);
         
         function launchRocket(event) {
-            var xPos = event.clientX - this.offsetLeft,
-                yPos = event.clientY - this.offsetTop;
+            var target = {
+                'x': event.clientX - this.offsetLeft,
+                'y': event.clientY - this.offsetTop
+            };
             
-            _entities.rockets.push(new Rocket(xPos, yPos));
+            _entities.rockets.push(new Rocket(
+                target,
+                {
+                    'x': _entities.turret.pos.x + (_entities.turret.width / 2),
+                    'y': _entities.turret.pos.y
+                }
+            ));
         };
 
         /**
@@ -184,10 +192,8 @@ var MC = MC || (function() {
          */
         function loadLevel(level) {
             // Add game entities
-            for (var i = 0; i < level.turrets.length; i++) {
-                _entities.turrets.push(level.turrets[i]);
-                _entities.targets.push(new Turret(level.turrets[i]));
-            }
+            _entities.turret = new Turret(_width, _height);
+            _entities.targets.push(_entities.turret);
             for (var i = 0; i < level.homes.length; i++) {
                 _entities.targets.push(new Home(level.homes[i]));
             }
@@ -208,31 +214,13 @@ var MC = MC || (function() {
          * @return {object} Target's location.
          */
         function getRandomTarget() {
-            return _getRandomEntity(_entities.targets);
-        };
-        
-        /**
-         * Get random Turret
-         *
-         * @return {object} Target's location.
-         */
-        function getRandomTurret() {
-            return _getRandomEntity(_entities.turrets);
-        };
-        
-        /**
-         * Get random target location
-         *
-         * @param  {array}  Array of entities
-         * @return {object} Target's location.
-         */
-        function _getRandomEntity(entities) {
-            var targetCount = entities.length;
+            var targetCount = _entities.targets.length;
             var rndIndex = Math.floor(targetCount * Math.random());
-            var target = entities[rndIndex];
-            
+            var target = _entities.targets[rndIndex];
+
             return target;
         };
+        
         
         /*
          * @return {float} Width of the canvas
@@ -246,7 +234,6 @@ var MC = MC || (function() {
             'loadLevel': loadLevel,
             'getWidth': getWidth,
             'getRandomTarget': getRandomTarget,
-            'getRandomTurret': getRandomTurret,
             'launchRocket': launchRocket,
             'run': run
         };
@@ -312,10 +299,13 @@ var MC = MC || (function() {
      *
      * @param {object} pos Location position.
      */
-    var Turret = function Turret(pos) {
-       this.pos = pos;
+    var Turret = function Turret(width, height) {
        this.width = 20;
        this.height = 20;
+       this.pos = {
+        'x': (width / 2) - (this.width / 2),
+        'y': 530
+       };
        this.colour = 'rgb(255, 0, 0)';
     };
     Turret.prototype = new Entity;
@@ -387,24 +377,20 @@ var MC = MC || (function() {
         }
     };
     
-    var Rocket = function Rocket(xPos, yPos) {
+    var Rocket = function Rocket(target, origin) {
         this.fullRadius = 30;
         this.currentRadius = 0;
         this.expanding = true;
-        this.explosionSpeed = 0.8;
+        this.explosionSpeed = 2;
         this.exploded = false;
-        this.speed = 4;
+        this.speed = 10;
         this.distance = 0;
         
-        this.target = {
-            'x': xPos,
-            'y': yPos
-        };
+        this.target = target;
         
         // @TODO: Weird turret reference issue causing red turrets to move
-        var turret = engine.getRandomTurret();
-        this.origin = {x: turret.x, y: turret.y};
-        this.pos = {x: turret.x, y: turret.y};
+        this.origin = origin;
+        this.pos = {x: origin.x, y:origin.y};
         
         // Calculate angle
         var x = this.target.x - this.origin.x;
@@ -464,11 +450,6 @@ var MC = MC || (function() {
      */
     var levels = [];
     levels[0] = {
-        'turrets': [
-            { 'x': 20, 'y': 510 },
-            { 'x': 210, 'y': 510 },
-            { 'x': 450, 'y': 510 }
-        ],
         'homes': [
             { 'x': 55, 'y': 520 },
             { 'x': 105, 'y': 535 },
