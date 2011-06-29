@@ -35,20 +35,20 @@ var MC = MC || (function() {
             startWave();
             Wave.init();
             _gameInterval = setInterval(_gameLoop, FPS);
-        };
+        }
         
         function startWave() {
             _new_missile = 0;
             _missiles_created = 0;
             _missiles_destroyed = 0;
-        };
+        }
         
         /**
          * Pause game
          */
         function _pause() {
             clearInterval(_gameInterval);
-        };
+        }
         
         // Setup click/touch events
         _canvas.addEventListener('click', launchRocket, false);
@@ -66,7 +66,7 @@ var MC = MC || (function() {
                     'y': _entities.turret.pos.y
                 }
             ));
-        };
+        }
 
         /**
          * Game loop
@@ -219,7 +219,7 @@ var MC = MC || (function() {
             var target = _entities.targets[rndIndex];
 
             return target;
-        };
+        }
         
         
         /*
@@ -227,7 +227,7 @@ var MC = MC || (function() {
          */
         function getWidth() {
             return _width;
-        };
+        }
 
         // Expose public methods
         return {
@@ -258,14 +258,14 @@ var MC = MC || (function() {
                     'MissileSpeed': 1.9 + (i / 4)
                 };
             }
-        };
+        }
         
         /**
          * Get the wave
          */
         function getWave(level) {
             return _waves[level];
-        };
+        }
         
         return {
             'init': init,
@@ -308,7 +308,7 @@ var MC = MC || (function() {
        };
        this.colour = 'rgb(255, 0, 0)';
     };
-    Turret.prototype = new Entity;
+    Turret.prototype = new Entity();
 
     /**
      * Home entity class
@@ -321,7 +321,7 @@ var MC = MC || (function() {
        this.height = 10;
        this.colour = 'rgb(0, 100, 250)';
     };
-    Home.prototype = new Entity;
+    Home.prototype = new Entity();
 
     /**
      * Missile class
@@ -367,9 +367,9 @@ var MC = MC || (function() {
     };
     
     Missile.prototype.hasHit = function() {
-        if (this.pos.x >= this.target.pos.x
-            && this.pos.y >= this.target.pos.y
-            && this.pos.y <= this.target.pos.y + this.target.width
+        if (this.pos.x >= this.target.pos.x &&
+            this.pos.y >= this.target.pos.y &&
+            this.pos.y <= this.target.pos.y + this.target.width
         ) {
             return true;
         } else {
@@ -471,7 +471,7 @@ var MC = MC || (function() {
     function init() {
         engine.loadLevel(levels[0]);
         engine.run();
-    };
+    }
 
     return {
         'init': init
