@@ -399,6 +399,9 @@ var MC = MC || (function() {
         
     };
     
+    /* Some comment.
+     *
+     */
     Rocket.prototype.move = function() {
         if (this.exploded) {
             return;
