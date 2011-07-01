@@ -79,14 +79,14 @@ var MC = MC || (function() {
             }
         
             // Add missiles
-            if (_new_missile < 0
-                && _missiles_created < Wave.getWave(_level).MissilesToDetroy
+            if (_new_missile < 0 &&
+                _missiles_created < Wave.getWave(_level).MissilesToDetroy
             ) {
                 _entities.missiles.push(
                     new Missile(false, false, Wave.getWave(_level).MissileSpeed)
                 );
                 _missiles_created += 1;
-                _new_missile += Wave.getWave(_level).TimeBetweenShots
+                _new_missile += Wave.getWave(_level).TimeBetweenShots;
             }
             
             _new_missile -= FPS;
@@ -109,7 +109,7 @@ var MC = MC || (function() {
             
             // Draw debug information
             debugInfo();
-        };
+        }
         
         function debugInfo() {
             _ctx.fillStyle = 'rgb(255, 255, 255)';
@@ -134,7 +134,7 @@ var MC = MC || (function() {
                     entities.splice(i, 1);
                 }
             }
-        };
+        }
 
         /**
          * Move each entity to the canvas
@@ -163,7 +163,7 @@ var MC = MC || (function() {
                    // _pause();
                 }
             }
-        };
+        }
         
         /**
          * Check if a missile hit a rocket explosion.
@@ -183,7 +183,7 @@ var MC = MC || (function() {
                 }
             }
             return false;
-        };
+        }
 
         /**
          * Load and setup a level
@@ -206,7 +206,7 @@ var MC = MC || (function() {
                 );
             }
 
-        };
+        }
 
         /**
          * Get random target location
